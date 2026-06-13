@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PeanutOS — Primeiro OS em Python</title>
+<meta name="description" content="PeanutOS é um projeto educacional desenvolvido em Python que simula conceitos de um sistema operacional moderno." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* =========================================================
+     Design Tokens
+     Peanut-inspired palette. Single accent.
+     ========================================================= */
+  :root {
+    /* Surfaces */
+    --bg:         #faf5ea;   /* light cream */
+    --bg-alt:     #f3ecdc;   /* deeper cream */
+    --surface:    #ffffff;   /* white cards */
+    --surface-2:  #fbf6ea;   /* very soft cream */
+
+    /* Borders */
+    --border:      #e8dfcc;
+    --border-soft: #efe8d7;
+    --line:        #e3d9c3;
+
+    /* Ink (dark brown text) */
+    --ink:   #2a1c10;
+    --ink-2: #4a3a28;
+    --ink-3: #7a6a55;
+    --ink-4: #a79780;
+
+    /* Accent (peanut brown) */
+    --brown:     #8b5a2b;
+    --brown-2:   #a86c39;
+    --brown-3:   #6f4521;
+    --brown-soft:  #f1e3cf;
+    --brown-soft-2: #e8d3b3;
+    --accent:    #c98a4b;
+
+    /* Radius */
+    --r-sm: 8px;
+    --r:    14px;
+    --r-lg: 20px;
+    --r-xl: 28px;
+
+    /* Shadows (diffusion only) */
+    --shadow-xs: 0 1px 2px rgba(70, 40, 10, 0.04);
+    --shadow-sm: 0 2px 8px rgba(70, 40, 10, 0.05);
+    --shadow-md: 0 8px 24px -8px rgba(70, 40, 10, 0.10);
+    --shadow-lg: 0 18px 40px -16px rgba(70, 40, 10, 0.18);
+
+    /* Layout */
+    --container: 1180px;
+    --gutter: 24px;
+
+    /* Motion */
+    --t-fast: 150ms;
+    --t: 220ms;
+    --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  /* =========================================================
+     Reset
+     ========================================================= */
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  img, svg { display: block; max-width: 100%; }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; border: 0; background: none; }
+  ul { list-style: none; padding: 0; margin: 0; }
+  h1, h2, h3, h4, h5 { margin: 0; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); }
+  p  { margin: 0; }
+  ::selection { background: var(--brown-soft-2); color: var(--ink); }
+
+  /* =========================================================
+     Layout helpers
+     ========================================================= */
+  .container { max-width: var(--container); margin: 0 auto; padding: 0 var(--gutter); }
+  .section { padding: 96px 0; }
+  .section.tight { padding: 72px 0; }
+  .section.alt { background: var(--bg-alt); }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--brown-3);
+    background: var(--brown-soft);
+    border: 1px solid var(--border-soft);
+    padding: 6px 12px;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+  }
+  .eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--brown); }
+
+  .section-head {
+    max-width: 720px;
+    margin: 0 auto 56px;
+    text-align: center;
+  }
+  .section-head .eyebrow { margin-bottom: 18px; }
+  .section-head h2 {
+    font-family: 'DM Serif Display', serif;
+    font-weight: 400;
+    font-size: clamp(28px, 4vw, 42px);
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+  }
+  .section-head p {
+    margin-top: 14px;
+    color: var(--ink-2);
+    font-size: 16px;
+  }
+
+  /* =========================================================
+     Buttons
+     ========================================================= */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 22px;
+    font-size: 15px;
+    font-weight: 500;
+    border-radius: 12px;
+    transition: transform var(--t) var(--ease), background var(--t) var(--ease), box-shadow var(--t) var(--ease), color var(--t) var(--ease), border-color var(--t) var(--ease);
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .btn svg { width: 16px; height: 16px; flex: 0 0 auto; }
+  .btn-primary {
+    background: var(--brown);
+    color: #fffaf2;
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-primary:hover {
+    background: var(--brown-2);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+  .btn-secondary {
+    background: var(--surface);
+    color: var(--ink);
+    border-color: var(--border);
+  }
+  .btn-secondary:hover {
+    border-color: var(--brown);
+    color: var(--brown-3);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-block { width: 100%; }
+
+  /* =========================================================
+     Header
+     ========================================================= */
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(250, 245, 234, 0.82);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+    backdrop-filter: saturate(140%) blur(10px);
+    border-bottom: 1px solid transparent;
+    transition: border-color var(--t) var(--ease);
+  }
+  .site-header.is-scrolled { border-bottom-color: var(--border); }
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 68px;
+  }
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--ink);
+  }
+  .logo-mark {
+    width: 32px; height: 32px;
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    background: var(--brown);
+    color: #fffaf2;
+    border-radius: 10px;
+    box-shadow: var(--shadow-xs);
+  }
+  .logo-mark svg { width: 18px; height: 18px; }
+  .logo-name { letter-spacing: -0.01em; }
+
+  .nav { display: flex; align-items: center; gap: 4px; }
+  .nav a {
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: 14.5px;
+    font-weight: 500;
+    color: var(--ink-2);
+    transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+  }
+  .nav a:hover { color: var(--brown-3); background: var(--brown-soft); }
+
+  .header-actions { display: flex; align-items: center; gap: 8px; }
+  .header-actions .btn { display: inline-flex; }
+
+  .hamburger {
+    display: none;
+    width: 40px; height: 40px;
+    align-items: center; justify-content: center;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .hamburger:hover { border-color: var(--brown); }
+  .hamburger svg { width: 18px; height: 18px; }
+
+  .mobile-nav {
+    display: none;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+    padding: 14px var(--gutter) 20px;
+  }
+  .mobile-nav.is-open { display: block; }
+  .mobile-nav a {
+    display: block;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 15px;
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+  .mobile-nav a:hover { background: var(--brown-soft); color: var(--brown-3); }
+  .mobile-nav .btn { margin-top: 10px; }
+
+  /* =========================================================
+     Hero
+     ========================================================= */
+  .hero {
+    padding: 80px 0 96px;
+    position: relative;
+    overflow: hidden;
+  }
+  /* two corner soft radial washes (not a gradient on cards) */
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(900px 500px at 85% -10%, rgba(201, 138, 75, 0.10), transparent 60%),
+      radial-gradient(700px 400px at 10% 0%,   rgba(139, 90, 43, 0.06), transparent 60%);
+    pointer-events: none;
+  }
+  .hero-grid {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 64px;
+    align-items: center;
+  }
+  .hero h1 {
+    font-family: 'DM Serif Display', serif;
+    font-weight: 400;
+    font-size: clamp(40px, 6vw, 68px);
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    margin-top: 18px;
+  }
+  .hero h1 .accent { color: var(--brown); }
+  .hero .subtitle {
+    font-size: clamp(17px, 1.6vw, 19px);
+    color: var(--ink-2);
+    margin-top: 14px;
+    max-width: 540px;
+  }
+  .hero .description {
+    margin-top: 18px;
+    color: var(--ink-2);
+    font-size: 16px;
+    max-width: 520px;
+  }
+
+  .hero-notices {
+    display: grid;
+    gap: 10px;
+    margin-top: 24px;
+    max-width: 540px;
+  }
+  .notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    box-shadow: var(--shadow-xs);
+  }
+  .notice .icon {
+    flex: 0 0 auto;
+    width: 32px; height: 32px;
+    border-radius: 9px;
+    background: var(--brown-soft);
+    color: var(--brown-3);
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .notice .icon svg { width: 16px; height: 16px; }
+  .notice p { font-size: 14.5px; color: var(--ink-2); line-height: 1.5; }
+  .notice strong { color: var(--ink); font-weight: 600; }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 28px;
+  }
+
+  /* =========================================================
+     Hero mockup (system preview)
+     ========================================================= */
+  .mockup {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+  }
+  .mockup-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    background: var(--bg-alt);
+    border-bottom: 1px solid var(--border);
+  }
+  .mockup-bar .dot { width: 11px; height: 11px; border-radius: 50%; background: #e2b89a; }
+  .mockup-bar .dot:nth-child(2) { background: #d8a878; }
+  .mockup-bar .dot:nth-child(3) { background: #b88552; }
+  .mockup-bar .label {
+    margin-left: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .mockup-body {
+    display: grid;
+    grid-template-columns: 168px 1fr;
+    min-height: 360px;
+  }
+  .mockup-side {
+    background: #f8f1e3;
+    border-right: 1px solid var(--border);
+    padding: 14px 12px;
+  }
+  .side-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px;
+    border-radius: 9px;
+    font-size: 13.5px;
+    color: var(--ink-2);
+  }
+  .side-item.is-active {
+    background: var(--brown-soft);
+    color: var(--brown-3);
+    font-weight: 500;
+  }
+  .side-item .ic {
+    width: 18px; height: 18px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: currentColor;
+  }
+  .side-item .ic svg { width: 14px; height: 14px; }
+
+  .mockup-main { padding: 22px; }
+  .mockup-main h4 {
+    font-size: 12px; font-weight: 600; color: var(--ink-3);
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .mockup-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .tile {
+    background: var(--bg);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .tile .lbl { font-size: 12px; color: var(--ink-3); }
+  .tile .val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 17px; color: var(--ink);
+    margin-top: 4px; font-weight: 500;
+  }
+  .tile .bar {
+    height: 6px; background: var(--brown-soft); border-radius: 999px;
+    margin-top: 10px; overflow: hidden;
+  }
+  .tile .bar > i { display: block; height: 100%; background: var(--brown); border-radius: 999px; }
+
+  .mockup-dock {
+    margin: 14px 22px 20px;
+    background: var(--bg);
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dock-app {
+    width: 30px; height: 30px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--brown-3);
+  }
+  .dock-app svg { width: 14px; height: 14px; }
+  .dock-search {
+    flex: 1;
+    margin-left: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+
+  /* =========================================================
+     Features (4 cards, mixed-weight layout, not 3-equal)
+     ========================================================= */
+  .features {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 20px;
+  }
+  .feature {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 26px 24px;
+    box-shadow: var(--shadow-xs);
+    transition: transform var(--t) var(--ease), box-shadow var(--t) var(--ease), border-color var(--t) var(--ease);
+  }
+  .feature:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--brown-soft-2);
+  }
+  .feature .ic {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: var(--brown-soft);
+    color: var(--brown-3);
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+  }
+  .feature .ic svg { width: 20px; height: 20px; }
+  .feature h3 { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+  .feature p  { font-size: 14.5px; color: var(--ink-2); line-height: 1.55; }
+
+  /* span-3 each => 2 per row, no 4-equal in a row */
+  .feature.span-3 { grid-column: span 3; }
+  .feature.span-6 { grid-column: span 6; }
+
+  /* =========================================================
+     Status card
+     ========================================================= */
+  .status-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 32px 36px;
+    max-width: 880px;
+    margin: 0 auto;
+  }
+  .status-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--border-soft);
+    margin-bottom: 22px;
+  }
+  .status-head h3 { font-size: 20px; font-weight: 600; }
+  .status-head .sub { color: var(--ink-3); font-size: 13.5px; margin-top: 2px; }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--brown-soft);
+    color: var(--brown-3);
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .status-badge .pulse {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--brown);
+    box-shadow: 0 0 0 0 rgba(139, 90, 43, 0.4);
+    animation: pulse 2.2s var(--ease) infinite;
+  }
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(139, 90, 43, 0.4); }
+    70%  { box-shadow: 0 0 0 8px rgba(139, 90, 43, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(139, 90, 43, 0); }
+  }
+  .status-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .status-item {
+    background: var(--bg);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .status-item .check {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--brown-soft);
+    color: var(--brown-3);
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: 0 0 auto;
+  }
+  .status-item .check svg { width: 14px; height: 14px; }
+  .status-item span { font-size: 14.5px; color: var(--ink); font-weight: 500; }
+
+  /* =========================================================
+     Download cards
+     ========================================================= */
+  .downloads {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .dl-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 28px 26px;
+    box-shadow: var(--shadow-xs);
+    transition: transform var(--t) var(--ease), box-shadow var(--t) var(--ease), border-color var(--t) var(--ease);
+    display: flex;
+    flex-direction: column;
+  }
+  .dl-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--brown-soft-2);
+  }
+  .dl-card .platform {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .dl-card .platform .name {
+    font-size: 12px; font-weight: 600; color: var(--ink-3);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .dl-card .platform .ver {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--ink-3);
+    background: var(--bg);
+    border: 1px solid var(--border-soft);
+    padding: 3px 8px; border-radius: 6px;
+  }
+  .dl-card h3 { font-size: 20px; margin-bottom: 6px; }
+  .dl-card .meta { color: var(--ink-2); font-size: 14px; margin-bottom: 22px; }
+  .dl-card .btn { margin-top: auto; }
+
+  /* =========================================================
+     Timeline (step-timeline pattern, 5 nodes)
+     ========================================================= */
+  .timeline {
+    position: relative;
+    max-width: 920px;
+    margin: 0 auto;
+  }
+  .timeline-track {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+  }
+  .timeline-track::before {
+    content: "";
+    position: absolute;
+    top: 24px; left: 8%; right: 8%;
+    height: 2px;
+    background: var(--line);
+    border-radius: 2px;
+  }
+  .tl-step { position: relative; text-align: center; padding: 0 8px; }
+  .tl-marker {
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    display: inline-flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+    color: var(--ink-3);
+    position: relative;
+    z-index: 1;
+    transition: all var(--t) var(--ease);
+  }
+  .tl-step.is-done .tl-marker {
+    background: var(--brown);
+    border-color: var(--brown);
+    color: #fffaf2;
+  }
+  .tl-step.is-current .tl-marker {
+    border-color: var(--brown);
+    color: var(--brown-3);
+    box-shadow: 0 0 0 4px rgba(139, 90, 43, 0.10);
+  }
+  .tl-marker svg { width: 18px; height: 18px; }
+  .tl-step h4 { font-size: 14.5px; font-weight: 600; margin-bottom: 4px; }
+  .tl-step p  { font-size: 12.5px; color: var(--ink-3); line-height: 1.45; }
+  .tl-step .tag {
+    display: inline-block; margin-top: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--ink-3);
+  }
+
+  /* =========================================================
+     GitHub
+     ========================================================= */
+  .github-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 44px 32px;
+    max-width: 720px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .github-card .gh-ic {
+    width: 56px; height: 56px;
+    border-radius: 14px;
+    background: var(--brown-soft);
+    color: var(--brown-3);
+    display: inline-flex; align-items: center; justify-content: center;
+    margin: 0 auto 18px;
+  }
+  .github-card .gh-ic svg { width: 28px; height: 28px; }
+  .github-card h3 {
+    font-family: 'DM Serif Display', serif;
+    font-weight: 400;
+    font-size: 30px;
+    margin-bottom: 10px;
+  }
+  .github-card p { color: var(--ink-2); margin-bottom: 22px; }
+
+  /* =========================================================
+     Footer
+     ========================================================= */
+  .site-footer {
+    background: var(--bg-alt);
+    border-top: 1px solid var(--border);
+    padding: 56px 0 28px;
+  }
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr;
+    gap: 48px;
+    margin-bottom: 36px;
+  }
+  .footer-brand p {
+    color: var(--ink-2);
+    font-size: 14.5px;
+    margin-top: 12px;
+    max-width: 320px;
+  }
+  .footer-col h5 {
+    font-size: 12.5px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--ink-3);
+    margin-bottom: 14px;
+  }
+  .footer-col ul { display: grid; gap: 8px; }
+  .footer-col a {
+    font-size: 14.5px; color: var(--ink-2);
+    transition: color var(--t-fast) var(--ease);
+  }
+  .footer-col a:hover { color: var(--brown-3); }
+  .footer-bottom {
+    display: flex;
+    align-items: center; justify-content: space-between;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 13.5px;
+    color: var(--ink-3);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  /* =========================================================
+     Responsive
+     ========================================================= */
+  @media (max-width: 1024px) {
+    .features { grid-template-columns: repeat(2, 1fr); }
+    .feature.span-3, .feature.span-6 { grid-column: span 1; }
+    .status-list { grid-template-columns: 1fr; }
+    .downloads { grid-template-columns: 1fr; max-width: 520px; margin: 0 auto; }
+    .hero-grid { grid-template-columns: 1fr; gap: 48px; }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 720px) {
+    .section { padding: 72px 0; }
+    .nav, .header-actions .btn { display: none; }
+    .hamburger { display: inline-flex; }
+    .features { grid-template-columns: 1fr; }
+    .status-card { padding: 24px 20px; }
+    .timeline-track {
+      grid-template-columns: 1fr;
+    }
+    .timeline-track::before {
+      top: 0; bottom: 0; left: 24px; right: auto;
+      width: 2px; height: auto;
+    }
+    .tl-step {
+      text-align: left;
+      display: grid;
+      grid-template-columns: 50px 1fr;
+      gap: 16px; align-items: start;
+      padding: 0 0 28px 0;
+    }
+    .tl-marker { margin: 0; }
+    .github-card { padding: 36px 22px; }
+    .github-card h3 { font-size: 24px; }
+    .footer-grid { grid-template-columns: 1fr; gap: 32px; }
+    .mockup-body { grid-template-columns: 1fr; }
+    .mockup-side { display: none; }
+    .mockup-tiles { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== HEADER ========== -->
+<header class="site-header" id="siteHeader">
+  <div class="container header-inner">
+    <a href="#top" class="logo" aria-label="PeanutOS — Página inicial">
+      <span class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 4c-2.5 0-4 1.8-4 4 0 1.4.6 2.5 1.5 3.3-1 .8-1.5 1.9-1.5 3.2 0 2.5 2 4.5 4.5 4.5.7 0 1.3-.1 1.9-.4.4.3.9.4 1.4.4 1.2 0 2.2-.6 2.8-1.5.6.4 1.3.6 2 .6 2.2 0 4-1.8 4-4 0-1.4-.6-2.6-1.6-3.4.4-.7.6-1.5.6-2.3 0-2.5-2-4.4-4.5-4.4-1.1 0-2.1.4-2.9 1-.6-.6-1.4-1-2.3-1z"/>
+          <path d="M9.5 11.5l5 .1" />
+        </svg>
+      </span>
+      <span class="logo-name">PeanutOS</span>
+    </a>
+
+    <nav class="nav" aria-label="Navegação principal">
+      <a href="#top">Início</a>
+      <a href="#recursos">Recursos</a>
+      <a href="#download">Download</a>
+      <a href="https://github.com" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+
+    <div class="header-actions">
+      <a href="#download" class="btn btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Baixar
+      </a>
+      <button class="hamburger" id="hamburger" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobileNav">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="mobile-nav" id="mobileNav">
+    <a href="#top">Início</a>
+    <a href="#recursos">Recursos</a>
+    <a href="#download">Download</a>
+    <a href="https://github.com" target="_blank" rel="noopener">GitHub</a>
+    <a href="#download" class="btn btn-primary btn-block">Baixar Agora</a>
+  </div>
+</header>
+
+<!-- ========== HERO ========== -->
+<section class="hero" id="top">
+  <div class="container">
+    <div class="hero-grid">
+      <div>
+        <span class="eyebrow"><span class="dot"></span> Versão experimental · 0.1</span>
+        <h1>Peanut<span class="accent">OS</span></h1>
+        <p class="subtitle">Primeiro OS em Python</p>
+        <p class="description">
+          PeanutOS é um projeto educacional desenvolvido em Python que simula conceitos de um sistema operacional moderno.
+        </p>
+
+        <div class="hero-notices">
+          <div class="notice">
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            </span>
+            <p><strong>Este projeto ainda está em desenvolvimento.</strong></p>
+          </div>
+          <div class="notice">
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </span>
+            <p>PeanutOS não é um sistema operacional real. É um projeto educacional criado para aprendizado, experimentação e demonstração de conceitos.</p>
+          </div>
+        </div>
+
+        <div class="hero-actions">
+          <a href="#download" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Baixar Agora
+          </a>
+          <a href="https://github.com" target="_blank" rel="noopener" class="btn btn-secondary">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.78 5.45.78 11.72c0 4.96 3.22 9.16 7.68 10.65.56.1.77-.24.77-.54 0-.27-.01-1.16-.02-2.1-3.12.68-3.78-1.34-3.78-1.34-.51-1.3-1.25-1.65-1.25-1.65-1.02-.7.08-.69.08-.69 1.13.08 1.72 1.16 1.72 1.16 1 1.72 2.63 1.22 3.27.93.1-.73.39-1.22.71-1.5-2.49-.28-5.11-1.25-5.11-5.55 0-1.23.44-2.23 1.16-3.02-.12-.28-.5-1.42.11-2.96 0 0 .95-.3 3.1 1.15a10.7 10.7 0 0 1 5.65 0c2.15-1.45 3.1-1.15 3.1-1.15.61 1.54.23 2.68.11 2.96.72.79 1.16 1.79 1.16 3.02 0 4.31-2.62 5.27-5.12 5.54.4.35.76 1.03.76 2.08 0 1.5-.01 2.71-.01 3.08 0 .3.21.65.78.54 4.46-1.49 7.67-5.69 7.67-10.65C23.22 5.45 18.27.5 12 .5z"/></svg>
+            Ver Projeto
+          </a>
+        </div>
+      </div>
+
+      <!-- Mockup: visual product preview -->
+      <div class="mockup" role="img" aria-label="Pré-visualização do desktop do PeanutOS">
+        <div class="mockup-bar">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="label">peanutos@desktop ~ % python main.py</span>
+        </div>
+        <div class="mockup-body">
+          <aside class="mockup-side" aria-hidden="true">
+            <div class="side-item is-active">
+              <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>
+              Início
+            </div>
+            <div class="side-item">
+              <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>
+              Aplicativos
+            </div>
+            <div class="side-item">
+              <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+              Arquivos
+            </div>
+            <div class="side-item">
+              <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.36.15.69.39.96.7.27.3.47.66.59 1.04.12.38.16.78.11 1.17"/></svg></span>
+              Configurações
+            </div>
+            <div class="side-item">
+              <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>
+              Terminal
+            </div>
+          </aside>
+          <div class="mockup-main">
+            <h4>Sistema</h4>
+            <div class="mockup-tiles">
+              <div class="tile">
+                <div class="lbl">CPU</div>
+                <div class="val">12%</div>
+                <div class="bar"><i style="width:12%"></i></div>
+              </div>
+              <div class="tile">
+                <div class="lbl">Memória</div>
+                <div class="val">340 MB</div>
+                <div class="bar"><i style="width:34%"></i></div>
+              </div>
+              <div class="tile">
+                <div class="lbl">Processos</div>
+                <div class="val">28</div>
+                <div class="bar"><i style="width:22%"></i></div>
+              </div>
+              <div class="tile">
+                <div class="lbl">Disco</div>
+                <div class="val">2.1 GB</div>
+                <div class="bar"><i style="width:48%"></i></div>
+              </div>
+              <div class="tile">
+                <div class="lbl">Uptime</div>
+                <div class="val">00:42</div>
+                <div class="bar"><i style="width:6%"></i></div>
+              </div>
+              <div class="tile">
+                <div class="lbl">Versão</div>
+                <div class="val">0.1.0</div>
+                <div class="bar"><i style="width:10%"></i></div>
+              </div>
+            </div>
+            <div class="mockup-dock">
+              <span class="dock-app" title="Arquivos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span>
+              <span class="dock-app" title="Navegador"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
+              <span class="dock-app" title="Editor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+              <span class="dock-app" title="Calculadora"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/></svg></span>
+              <span class="dock-app" title="Player"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></span>
+              <span class="dock-search">▎ buscar aplicativos, arquivos…</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== FEATURES ========== -->
+<section class="section" id="recursos">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow"><span class="dot"></span> Recursos</span>
+      <h2>Tudo o que você precisa para aprender</h2>
+      <p>Uma base sólida em Python aplicada a conceitos clássicos de sistemas operacionais — organizada, legível e didática.</p>
+    </div>
+
+    <div class="features">
+      <article class="feature span-3">
+        <span class="ic" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+        </span>
+        <h3>Interface Moderna</h3>
+        <p>Layout limpo inspirado em desktops contemporâneos, com janelas, dock e barra de tarefas organizados em componentes reutilizáveis.</p>
+      </article>
+
+      <article class="feature span-3">
+        <span class="ic" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        </span>
+        <h3>Desenvolvido em Python</h3>
+        <p>Construído majoritariamente em Python, priorizando clareza, legibilidade e facilidade de leitura para quem está começando.</p>
+      </article>
+
+      <article class="feature span-3">
+        <span class="ic" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+        </span>
+        <h3>Projeto Educacional</h3>
+        <p>Foco em aprendizado, experimentação e demonstração. Cada módulo é documentado para servir como material de estudo.</p>
+      </article>
+
+      <article class="feature span-3">
+        <span class="ic" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </span>
+        <h3>Em Evolução</h3>
+        <p>Novos recursos, aplicativos internos e melhorias de interface estão em desenvolvimento ativo a cada iteração.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ========== STATUS ========== -->
+<section class="section alt" id="status">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow"><span class="dot"></span> Atualização</span>
+      <h2>Status do Projeto</h2>
+      <p>Um panorama transparente de onde o PeanutOS está hoje e para onde ele está caminhando.</p>
+    </div>
+
+    <div class="status-card">
+      <div class="status-head">
+        <div>
+          <h3>PeanutOS · Painel de desenvolvimento</h3>
+          <div class="sub">Última atualização — Junho de 2026</div>
+        </div>
+        <span class="status-badge"><span class="pulse"></span> Em desenvolvimento ativo</span>
+      </div>
+
+      <div class="status-list">
+        <div class="status-item">
+          <span class="check" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+          <span>Desenvolvimento ativo</span>
+        </div>
+        <div class="status-item">
+          <span class="check" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+          <span>Novos recursos sendo criados</span>
+        </div>
+        <div class="status-item">
+          <span class="check" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+          <span>Interface em evolução</span>
+        </div>
+        <div class="status-item">
+          <span class="check" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+          <span>Versão experimental</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== DOWNLOAD ========== -->
+<section class="section" id="download">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow"><span class="dot"></span> Download</span>
+      <h2>Baixe a versão mais recente</h2>
+      <p>Baixe a versão mais recente do PeanutOS e experimente em diferentes plataformas.</p>
+    </div>
+
+    <div class="downloads">
+      <article class="dl-card">
+        <div class="platform">
+          <span class="name">Windows</span>
+          <span class="ver">v0.1.0</span>
+        </div>
+        <h3>Windows 10 / 11</h3>
+        <p class="meta">Build experimental · ~18 MB</p>
+        <a href="#" class="btn btn-primary btn-block">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Baixar para Windows
+        </a>
+      </article>
+
+      <article class="dl-card">
+        <div class="platform">
+          <span class="name">Android</span>
+          <span class="ver">v0.1.0</span>
+        </div>
+        <h3>Android 9+</h3>
+        <p class="meta">APK experimental · ~12 MB</p>
+        <a href="#" class="btn btn-primary btn-block">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Baixar para Android
+        </a>
+      </article>
+
+      <article class="dl-card">
+        <div class="platform">
+          <span class="name">Source</span>
+          <span class="ver">v0.1.0</span>
+        </div>
+        <h3>Código Fonte</h3>
+        <p class="meta">Repositório · Licença MIT</p>
+        <a href="#" class="btn btn-secondary btn-block">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.78 5.45.78 11.72c0 4.96 3.22 9.16 7.68 10.65.56.1.77-.24.77-.54 0-.27-.01-1.16-.02-2.1-3.12.68-3.78-1.34-3.78-1.34-.51-1.3-1.25-1.65-1.25-1.65-1.02-.7.08-.69.08-.69 1.13.08 1.72 1.16 1.72 1.16 1 1.72 2.63 1.22 3.27.93.1-.73.39-1.22.71-1.5-2.49-.28-5.11-1.25-5.11-5.55 0-1.23.44-2.23 1.16-3.02-.12-.28-.5-1.42.11-2.96 0 0 .95-.3 3.1 1.15a10.7 10.7 0 0 1 5.65 0c2.15-1.45 3.1-1.15 3.1-1.15.61 1.54.23 2.68.11 2.96.72.79 1.16 1.79 1.16 3.02 0 4.31-2.62 5.27-5.12 5.54.4.35.76 1.03.76 2.08 0 1.5-.01 2.71-.01 3.08 0 .3.21.65.78.54 4.46-1.49 7.67-5.69 7.67-10.65C23.22 5.45 18.27.5 12 .5z"/></svg>
+          Baixar Código Fonte
+        </a>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ========== TIMELINE ========== -->
+<section class="section alt" id="roadmap">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow"><span class="dot"></span> Roadmap</span>
+      <h2>Trajetória do projeto</h2>
+      <p>Os principais marcos que guiam o desenvolvimento do PeanutOS, do conceito às futuras versões.</p>
+    </div>
+
+    <div class="timeline">
+      <div class="timeline-track">
+        <div class="tl-step is-done">
+          <div class="tl-marker" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div>
+            <h4>Planejamento</h4>
+            <p>Definição de escopo, arquitetura e ferramentas iniciais.</p>
+            <span class="tag">concluído</span>
+          </div>
+        </div>
+
+        <div class="tl-step is-done">
+          <div class="tl-marker" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div>
+            <h4>Desenvolvimento Inicial</h4>
+            <p>Núcleo, ciclo de eventos e primeiros módulos do sistema.</p>
+            <span class="tag">concluído</span>
+          </div>
+        </div>
+
+        <div class="tl-step is-current">
+          <div class="tl-marker" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/></svg>
+          </div>
+          <div>
+            <h4>Interface Moderna</h4>
+            <p>Layout responsivo, dock, janelas e componentes visuais.</p>
+            <span class="tag">em andamento</span>
+          </div>
+        </div>
+
+        <div class="tl-step">
+          <div class="tl-marker" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+          </div>
+          <div>
+            <h4>Aplicativos Integrados</h4>
+            <p>Editor, terminal, calculadora, gerenciador de arquivos.</p>
+            <span class="tag">próximo</span>
+          </div>
+        </div>
+
+        <div class="tl-step">
+          <div class="tl-marker" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div>
+            <h4>Futuras Versões</h4>
+            <p>Multitarefa avançada, empacotamento e novos utilitários.</p>
+            <span class="tag">planejado</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== GITHUB ========== -->
+<section class="section" id="github">
+  <div class="container">
+    <div class="github-card">
+      <span class="gh-ic" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.78 5.45.78 11.72c0 4.96 3.22 9.16 7.68 10.65.56.1.77-.24.77-.54 0-.27-.01-1.16-.02-2.1-3.12.68-3.78-1.34-3.78-1.34-.51-1.3-1.25-1.65-1.25-1.65-1.02-.7.08-.69.08-.69 1.13.08 1.72 1.16 1.72 1.16 1 1.72 2.63 1.22 3.27.93.1-.73.39-1.22.71-1.5-2.49-.28-5.11-1.25-5.11-5.55 0-1.23.44-2.23 1.16-3.02-.12-.28-.5-1.42.11-2.96 0 0 .95-.3 3.1 1.15a10.7 10.7 0 0 1 5.65 0c2.15-1.45 3.1-1.15 3.1-1.15.61 1.54.23 2.68.11 2.96.72.79 1.16 1.79 1.16 3.02 0 4.31-2.62 5.27-5.12 5.54.4.35.76 1.03.76 2.08 0 1.5-.01 2.71-.01 3.08 0 .3.21.65.78.54 4.46-1.49 7.67-5.69 7.67-10.65C23.22 5.45 18.27.5 12 .5z"/></svg>
+      </span>
+      <h3>Projeto Open Source</h3>
+      <p>Todo o desenvolvimento do PeanutOS pode ser acompanhado pelo GitHub. Contribuições, sugestões e relatórios são bem-vindos.</p>
+
+      <a href="https://github.com" target="_blank" rel="noopener" class="btn btn-primary">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.78 5.45.78 11.72c0 4.96 3.22 9.16 7.68 10.65.56.1.77-.24.77-.54 0-.27-.01-1.16-.02-2.1-3.12.68-3.78-1.34-3.78-1.34-.51-1.3-1.25-1.65-1.25-1.65-1.02-.7.08-.69.08-.69 1.13.08 1.72 1.16 1.72 1.16 1 1.72 2.63 1.22 3.27.93.1-.73.39-1.22.71-1.5-2.49-.28-5.11-1.25-5.11-5.55 0-1.23.44-2.23 1.16-3.02-.12-.28-.5-1.42.11-2.96 0 0 .95-.3 3.1 1.15a10.7 10.7 0 0 1 5.65 0c2.15-1.45 3.1-1.15 3.1-1.15.61 1.54.23 2.68.11 2.96.72.79 1.16 1.79 1.16 3.02 0 4.31-2.62 5.27-5.12 5.54.4.35.76 1.03.76 2.08 0 1.5-.01 2.71-.01 3.08 0 .3.21.65.78.54 4.46-1.49 7.67-5.69 7.67-10.65C23.22 5.45 18.27.5 12 .5z"/></svg>
+        Acessar no GitHub
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ========== FOOTER ========== -->
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="#top" class="logo">
+          <span class="logo-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 4c-2.5 0-4 1.8-4 4 0 1.4.6 2.5 1.5 3.3-1 .8-1.5 1.9-1.5 3.2 0 2.5 2 4.5 4.5 4.5.7 0 1.3-.1 1.9-.4.4.3.9.4 1.4.4 1.2 0 2.2-.6 2.8-1.5.6.4 1.3.6 2 .6 2.2 0 4-1.8 4-4 0-1.4-.6-2.6-1.6-3.4.4-.7.6-1.5.6-2.3 0-2.5-2-4.4-4.5-4.4-1.1 0-2.1.4-2.9 1-.6-.6-1.4-1-2.3-1z"/>
+              <path d="M9.5 11.5l5 .1" />
+            </svg>
+          </span>
+          <span class="logo-name">PeanutOS</span>
+        </a>
+        <p>Projeto educacional desenvolvido em Python.</p>
+      </div>
+
+      <div class="footer-col">
+        <h5>Navegação</h5>
+        <ul>
+          <li><a href="#top">Início</a></li>
+          <li><a href="#recursos">Recursos</a></li>
+          <li><a href="#download">Download</a></li>
+          <li><a href="#status">Status</a></li>
+          <li><a href="#roadmap">Roadmap</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h5>Projeto</h5>
+        <ul>
+          <li><a href="https://github.com" target="_blank" rel="noopener">Repositório no GitHub</a></li>
+          <li><a href="https://github.com/issues" target="_blank" rel="noopener">Reportar problema</a></li>
+          <li><a href="https://github.com/discussions" target="_blank" rel="noopener">Discussões</a></li>
+          <li><a href="#download">Baixar versão atual</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <span>© 2026 PeanutOS · Todos os direitos reservados.</span>
+      <span>Feito com cuidado em Python</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Mobile menu toggle
+  const hamburger = document.getElementById('hamburger');
+  const mobileNav = document.getElementById('mobileNav');
+  hamburger.addEventListener('click', () => {
+    const isOpen = mobileNav.classList.toggle('is-open');
+    hamburger.setAttribute('aria-expanded', String(isOpen));
+    hamburger.setAttribute('aria-label', isOpen ? 'Fechar menu' : 'Abrir menu');
+  });
+  mobileNav.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => {
+      mobileNav.classList.remove('is-open');
+      hamburger.setAttribute('aria-expanded', 'false');
+      hamburger.setAttribute('aria-label', 'Abrir menu');
+    });
+  });
+
+  // Sticky header shadow on scroll
+  const header = document.getElementById('siteHeader');
+  const onScroll = () => {
+    header.classList.toggle('is-scrolled', window.scrollY > 4);
+  };
+  document.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+</script>
+
+</body>
+</html>
